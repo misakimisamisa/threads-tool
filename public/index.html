@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Threads 投稿ツール｜白金高輪PT</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;700;900&family=Cormorant+Garamond:ital@1&display=swap');
+:root{--ink:#0d0d0d;--paper:#f5f0e8;--cream:#ede8dc;--gold:#b8964a;--gold2:#d4ae6a;--rust:#8b3a2a;--sage:#4a6741;--gray:#6b6b6b;--border:#c8c3b8;--white:#fdfaf4}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--paper);color:var(--ink);font-family:'Zen Kaku Gothic New','Hiragino Kaku Gothic ProN',sans-serif;font-weight:300;min-height:100vh;padding-bottom:48px}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px}
+header{border-bottom:1px solid var(--border);padding:20px 0 14px;margin-bottom:18px}
+.logo-en{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:10px;letter-spacing:.35em;color:var(--gold);text-transform:uppercase;margin-bottom:3px}
+.logo-ja{font-size:21px;font-weight:900;letter-spacing:.03em}
+.logo-sub{font-size:11px;color:var(--gray);margin-top:4px}
+.badge{display:inline-flex;align-items:center;gap:7px;background:var(--ink);color:var(--white);padding:6px 12px;border-radius:2px;font-size:10px;letter-spacing:.12em;margin-top:10px}
+.bdot{width:6px;height:6px;border-radius:50%;background:#44cc66;animation:pulse 2s infinite}
+#status{border-radius:2px;padding:12px 14px;margin-bottom:18px;font-size:13px;display:flex;align-items:center;gap:9px;border:1px solid var(--border);background:var(--cream);min-height:46px;transition:all .25s}
+#status.ok{border-color:var(--sage);background:rgba(74,103,65,.08)}
+#status.err{border-color:var(--rust);background:rgba(139,58,42,.08)}
+#status.run{border-color:var(--gold);background:rgba(184,150,74,.08)}
+.card{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:20px;margin-bottom:14px}
+.slbl{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:10px;letter-spacing:.38em;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
+.card-title{font-size:15px;font-weight:700;margin-bottom:14px}
+.lbl{font-size:11px;letter-spacing:.18em;color:var(--gray);display:block;margin-bottom:6px;text-transform:uppercase}
+textarea,input[type=text],input[type=datetime-local]{width:100%;background:var(--paper);border:1px solid var(--border);border-radius:2px;padding:11px 12px;font-family:inherit;font-size:15px;color:var(--ink);outline:none;transition:border-color .2s;-webkit-appearance:none}
+textarea{resize:none;line-height:1.75}
+textarea:focus,input:focus{border-color:var(--gold)}
+.char-row{display:flex;justify-content:flex-end;margin-top:5px}
+.char{font-size:11px;color:var(--gray)}
+.char.over{color:var(--rust);font-weight:700}
+.preview-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+#preview{background:var(--cream);border:1px solid var(--border);border-radius:2px;padding:13px 14px;font-size:14px;line-height:1.8;min-height:80px;white-space:pre-wrap;word-break:break-all;color:var(--ink)}
+.btn{font-family:inherit;font-weight:700;font-size:13px;letter-spacing:.12em;border:none;border-radius:2px;cursor:pointer;padding:14px 18px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;margin-top:12px}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-gold:active{background:var(--gold2)}
+.btn-black{background:var(--ink);color:var(--white)}
+.btn-black:active{background:#333}
+.btn-out{background:transparent;color:var(--ink);border:1px solid var(--border)}
+.btn:disabled{background:var(--border)!important;cursor:not-allowed;color:#fff}
+.btn-danger{font-family:inherit;font-weight:700;font-size:11px;background:transparent;color:var(--rust);border:1px solid rgba(139,58,42,.3);border-radius:2px;padding:7px 12px;cursor:pointer}
+.btn-sm{font-family:inherit;font-weight:700;font-size:11px;background:transparent;color:var(--ink);border:1px solid var(--border);border-radius:2px;padding:7px 12px;cursor:pointer}
+.theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
+.tbtn{background:var(--paper);border:1px solid var(--border);border-radius:2px;padding:10px 8px;font-family:inherit;font-size:12px;text-align:left;cursor:pointer;color:var(--ink);transition:all .15s;line-height:1.4}
+.tbtn.active{border-color:var(--gold);background:rgba(184,150,74,.1);color:var(--gold)}
+.form-row{margin-bottom:14px}
+.div{height:1px;background:var(--border);margin:16px 0}
+.q-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.q-item{border:1px solid var(--border);border-radius:2px;padding:12px 13px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:10px;background:var(--white);align-items:start}
+.q-item.sent{opacity:.65;border-color:rgba(74,103,65,.3)}
+.q-text{font-size:13px;line-height:1.6;word-break:break-all}
+.q-meta{font-size:11px;color:var(--gray);margin-top:3px}
+.q-acts{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.q-st{font-size:11px;padding:2px 8px;border-radius:20px;display:inline-block;white-space:nowrap}
+.q-st.pending{background:rgba(184,150,74,.12);color:var(--gold)}
+.q-st.sent{background:rgba(74,103,65,.12);color:var(--sage)}
+.q-st.failed{background:rgba(139,58,42,.12);color:var(--rust)}
+.q-acts{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.empty{text-align:center;padding:28px 20px;color:var(--gray);font-size:13px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.spin{width:14px;height:14px;border:2px solid transparent;border-top-color:currentColor;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;flex-shrink:0}
+footer{border-top:1px solid var(--border);padding:16px 0 0;margin-top:24px;text-align:center;font-size:11px;color:var(--gray);letter-spacing:.1em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo-en">Shirokanedai Personal Training</div>
+    <div class="logo-ja">Threads 自動投稿ツール</div>
+    <div class="logo-sub">柔道整復師監修 ｜ 白金高輪</div>
+    <div class="badge"><div class="bdot"></div>THREADS CONNECTED</div>
+  </header>
+
+  <div id="status"><span>💡</span><span id="st-msg">テーマを選んでAI生成 → 投稿できます。</span></div>
+
+  <!-- AI生成 -->
+  <div class="card">
+    <div class="slbl">AI 投稿生成</div>
+    <div class="card-title">テーマを選んで自動生成</div>
+    <div class="theme-grid">
+      <button class="tbtn" data-key="body_pain">🦴 身体の痛み・不調</button>
+      <button class="tbtn" data-key="training">💪 トレーニング知識</button>
+      <button class="tbtn" data-key="nutrition">🥗 栄養・食事</button>
+      <button class="tbtn" data-key="posture">🧘 姿勢・体幹</button>
+      <button class="tbtn" data-key="motivation">🔥 モチベーション</button>
+      <button class="tbtn" data-key="injury_prevention">🩹 ケガ予防（柔道整復師）</button>
+      <button class="tbtn" data-key="studio_promo">🏋️ スタジオ紹介</button>
+      <button class="tbtn" data-key="lifestyle">✨ 生活習慣改善</button>
+    </div>
+    <div class="form-row">
+      <label class="lbl">カスタム指示（任意）</label>
+      <input type="text" id="hint" placeholder="例：肩こりのセルフケア、夏に向けた体づくりなど">
+    </div>
+    <button class="btn btn-gold" id="gen-btn" onclick="generate()">✦ AI で投稿文を生成</button>
+  </div>
+
+  <!-- 編集・プレビュー -->
+  <div class="card">
+    <div class="slbl">投稿内容</div>
+    <div class="form-row">
+      <label class="lbl">本文（500文字以内）</label>
+      <textarea id="post-text" rows="8" placeholder="上のAI生成ボタンで文章が入ります。直接入力もできます。" oninput="onInput()"></textarea>
+      <div class="char-row"><span class="char" id="char">0 / 500</span></div>
+    </div>
+    <div class="div"></div>
+    <div class="slbl">プレビュー</div>
+    <div class="preview-bar">
+      <div class="avatar">🏋</div>
+      <span style="font-weight:700;font-size:13px;">白金高輪パーソナルトレーニング</span>
+    </div>
+    <div id="preview">投稿文がここにプレビューされます。</div>
+    <button class="btn btn-black" id="post-btn" onclick="postNow()">▶ 今すぐ投稿する</button>
+  </div>
+
+  <!-- スケジュール -->
+  <div class="card">
+    <div class="slbl">スケジュール投稿</div>
+    <div class="card-title">日時を指定して予約</div>
+    <div class="form-row">
+      <label class="lbl">投稿日時</label>
+      <input type="datetime-local" id="sched-time">
+    </div>
+    <button class="btn btn-out" onclick="schedulePost()">🕐 スケジュール登録</button>
+  </div>
+
+  <!-- キュー -->
+  <div class="card">
+    <div class="q-head">
+      <div>
+        <div class="slbl">投稿キュー</div>
+        <div class="card-title" style="margin-bottom:0">スケジュール・送信履歴</div>
+      </div>
+      <button class="btn-danger" onclick="clearSent()">送信済みを削除</button>
+    </div>
+    <div id="queue-list"></div>
+  </div>
+
+  <footer>白金高輪パーソナルトレーニングスタジオ ｜ 柔道整復師運営</footer>
+</div>
+
+<script>
+const TK  = "THAAhirSwFovpBUVRQenZARcXItOWcyblRtVXFGOU5kOGIzaVNxX3VKdmtENUFhVzhGTnFkMW5OcUtWZA0lPUk93VHZAXcjJMdjYwZA2ZAkN3FxV1ItemJLTERIRUt3VE90Q2pJQ0JKX0tsNFFVLTFHTFYtNDRkTEpvalZAiSFJaLWU2a2hXM0pXRG1rd201enlZASDgZD";
+const UID = "1784146337672859";
+
+let selectedTheme = null;
+let queue = [];
+try { queue = JSON.parse(localStorage.getItem('tq5') || '[]'); } catch {}
+
+window.addEventListener('DOMContentLoaded', () => {
+  setDefaultTime();
+  renderQueue();
+  startScheduler();
+  document.querySelectorAll('.tbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedTheme = btn.dataset.key;
+    });
+  });
+});
+
+function setDefaultTime() {
+  const d = new Date(); d.setHours(d.getHours() + 1, 0, 0, 0);
+  document.getElementById('sched-time').value = d.toISOString().slice(0,16);
+}
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('status');
+  el.className = type;
+  const icon = type==='ok' ? '✓' : type==='err' ? '✗' : type==='run' ? '<span class="spin"></span>' : '💡';
+  el.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+}
+
+function onInput() {
+  const v = document.getElementById('post-text').value;
+  const el = document.getElementById('char');
+  el.textContent = `${v.length} / 500`;
+  el.className = v.length > 500 ? 'char over' : 'char';
+  document.getElementById('preview').textContent = v || '投稿文がここにプレビューされます。';
+}
+
+async function generate() {
+  if (!selectedTheme) { setStatus('テーマを選択してください。', 'err'); return; }
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> 生成中...';
+  setStatus('AIが投稿文を生成中...', 'run');
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ theme: selectedTheme, hint: document.getElementById('hint').value.trim() })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'サーバーエラー');
+    document.getElementById('post-text').value = data.text;
+    onInput();
+    setStatus('生成完了！確認して投稿してください。', 'ok');
+  } catch(e) {
+    setStatus('生成エラー：' + e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '✦ AI で投稿文を生成';
+  }
+}
+
+async function postToThreads(text) {
+  const r1 = await fetch(`https://graph.threads.net/v1.0/${UID}/threads`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ media_type: 'TEXT', text, access_token: TK })
+  });
+  const d1 = await r1.json();
+  if (!d1.id) throw new Error(d1.error?.message || 'コンテナ作成失敗');
+  await new Promise(r => setTimeout(r, 3000));
+  const r2 = await fetch(`https://graph.threads.net/v1.0/${UID}/threads_publish`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ creation_id: d1.id, access_token: TK })
+  });
+  const d2 = await r2.json();
+  if (!d2.id) throw new Error(d2.error?.message || 'パブリッシュ失敗');
+  return d2.id;
+}
+
+async function postNow() {
+  const text = document.getElementById('post-text').value.trim();
+  if (!text) { setStatus('投稿内容を入力してください。', 'err'); return; }
+  if (text.length > 500) { setStatus('500文字以内にしてください。', 'err'); return; }
+  const btn = document.getElementById('post-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> 投稿中...';
+  setStatus('Threadsに投稿中...', 'run');
+  try {
+    const id = await postToThreads(text);
+    setStatus('✓ 投稿完了！', 'ok');
+    addHistory(text, 'sent');
+    document.getElementById('post-text').value = ''; onInput();
+  } catch(e) {
+    setStatus('投稿エラー：' + e.message, 'err');
+    addHistory(text, 'failed');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '▶ 今すぐ投稿する';
+  }
+}
+
+function schedulePost() {
+  const text = document.getElementById('post-text').value.trim();
+  const time = document.getElementById('sched-time').value;
+  if (!text) { setStatus('投稿内容を入力してください。', 'err'); return; }
+  if (text.length > 500) { setStatus('500文字以内にしてください。', 'err'); return; }
+  const at = new Date(time).getTime();
+  if (isNaN(at) || at <= Date.now()) { setStatus('未来の日時を指定してください。', 'err'); return; }
+  queue.push({ id: Date.now(), text, scheduledAt: at, status: 'pending' });
+  save(); renderQueue();
+  setStatus('📅 スケジュール登録：' + new Date(at).toLocaleString('ja-JP'), 'ok');
+  document.getElementById('post-text').value = ''; onInput(); setDefaultTime();
+}
+
+function addHistory(text, status) {
+  queue.unshift({ id: Date.now(), text, scheduledAt: Date.now(), status });
+  save(); renderQueue();
+}
+
+function save() { localStorage.setItem('tq5', JSON.stringify(queue)); }
+
+function renderQueue() {
+  const el = document.getElementById('queue-list');
+  if (!queue.length) { el.innerHTML = '<div class="empty">スケジュール登録するとここに表示されます</div>'; return; }
+  el.innerHTML = [...queue].reverse().map(item => {
+    const preview = item.text.length > 65 ? item.text.slice(0,65)+'…' : item.text;
+    const sLabel = item.status==='sent' ? '✓ 送信済み' : item.status==='failed' ? '✗ 失敗' : '⏳ 待機中';
+    const sNow = item.status==='pending' ? `<button class="btn-sm" onclick="sendNow(${item.id})">今すぐ送信</button>` : '';
+    return `<div class="q-item ${item.status==='sent'?'sent':''}">
+      <div><div class="q-text">${esc(preview)}</div><div class="q-meta">${new Date(item.scheduledAt).toLocaleString('ja-JP')}</div></div>
+      <div class="q-acts"><span class="q-st ${item.status}">${sLabel}</span>${sNow}<button class="btn-danger" onclick="del(${item.id})">削除</button></div>
+    </div>`;
+  }).join('');
+}
+
+async function sendNow(id) {
+  const item = queue.find(i => i.id===id); if (!item) return;
+  setStatus('投稿中...', 'run');
+  try { await postToThreads(item.text); item.status='sent'; setStatus('✓ 投稿完了！', 'ok'); }
+  catch(e) { item.status='failed'; setStatus('エラー：'+e.message, 'err'); }
+  save(); renderQueue();
+}
+
+function del(id) { queue=queue.filter(i=>i.id!==id); save(); renderQueue(); }
+function clearSent() { queue=queue.filter(i=>i.status==='pending'); save(); renderQueue(); }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function startScheduler() {
+  setInterval(async () => {
+    const due = queue.filter(i => i.status==='pending' && i.scheduledAt<=Date.now());
+    for (const item of due) {
+      try { await postToThreads(item.text); item.status='sent'; }
+      catch { item.status='failed'; }
+      save(); renderQueue();
+    }
+  }, 30000);
+}
+</script>
+</body>
+</html>
